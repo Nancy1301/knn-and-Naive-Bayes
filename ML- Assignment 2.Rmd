@@ -1,0 +1,718 @@
+---
+title: "Machine Learning Assignment 2"
+output: html_notebook
+---
+
+# Problem 1: Applying k-Nearest Neighbors to predict the success of a marketing campaign. For this assignment, we will be using the bank marketing dataset from UCI. The data has 17 attributes and is related to marketing campaigns (phone calls) of a Portuguese banking institution. The classification goal is to predict if the client will subscribe a term deposit (variable y).
+
+# Please download and unzip the dataset from here: https://archive.ics.uci.edu/dataset/222/bank+marketing .The dataset you will be working on is stored in bank-full.csv.
+
+# Open the file bank-names.txt and carefully read the attribute information to understand what information is stored in each attribute, what values each attribute can take and so on.
+
+# 1.(1pt) Download the dataset and store it in a dataframe in R. Note: the attributes are separated by semicolon so make sure you set “sep” option correctly inside read.csv
+
+```{r}
+# Let's read the data from the data set
+bank = read.csv("/Users/nancy/Downloads/bank+marketing/bank/bank-full.csv", sep = ';', na.strings = "unknown")
+bank
+```
+# Some Information of the variables from the dataset:
+# Input variables:
+   #bank client data:
+   1 - age (numeric)
+   2 - job : type of job (categorical:     
+             "admin.","unknown","unemployed","management","housemaid","entrepreneur","student","blue-collar","self-employed",
+             "retired","technician","services") 
+   3 - marital : marital status (categorical: "married","divorced","single"; note: "divorced" means divorced or widowed)
+   4 - education (categorical: "unknown","secondary","primary","tertiary")
+   5 - default: has credit in default? (binary: "yes","no")
+   6 - balance: average yearly balance, in euros (numeric) 
+   7 - housing: has housing loan? (binary: "yes","no")
+   8 - loan: has personal loan? (binary: "yes","no")
+   # related with the last contact of the current campaign:
+   9 - contact: contact communication type (categorical: "unknown","telephone","cellular") 
+  10 - day: last contact day of the month (numeric)
+  11 - month: last contact month of year (categorical: "jan", "feb", "mar", ..., "nov", "dec")
+  12 - duration: last contact duration, in seconds (numeric)
+   # other attributes:
+  13 - campaign: number of contacts performed during this campaign and for this client (numeric, includes last contact)
+  14 - pdays: number of days that passed by after the client was last contacted from a previous campaign (numeric, -1 means client was not previously                 contacted)
+  15 - previous: number of contacts performed before this campaign and for this client (numeric)
+  16 - poutcome: outcome of the previous marketing campaign (categorical: "unknown","other","failure","success")
+
+  Output variable (desired target):
+  17 - y - has the client subscribed a term deposit? (binary: "yes","no")
+
+
+
+2. (2 pt) Explore the overall structure of the dataset using the str() function. Get a summary statistics of each variable. Explain what is the type of each variable ( categorical( unordered), categorical (ordered), or continuous)
+
+```{r}
+# Exploring the overall structure of the attributes
+str(bank) 
+```
+According to this, We can analyse that, We have around 45211 observations and 16 columns/variables and 1 target variable: "y".
+
+```{r}
+summary(bank)
+```
+The categorical variables are: job, marital, education, default, housing, loan, contact, month, poutcome
+ordered: education [ As this have levels of education making it a rankable category]
+unordered: job, marital, default, housing, loan, contact, month, poutcome
+The target variable: y is also a categorical variable
+The numerical variables: age, balance, day, duration, campaign, pdays, previous
+Discrete: age, day, campaign, pdays, previous
+Continuous: balance, duration
+
+
+3. (1pt) Get the frequency table of the target variable “y” to see how many observations you have in each category of y. Is y balanced? that is, do you have roughly same observations in y=yes and y=no?
+
+```{r}
+# First of all let's create a new dataframe to store the data.
+# To my understanding, it's a great practice to make any new changes in the copied version of data and not the original.
+bank_copy = bank
+print(bank_copy)
+```
+```{r}
+frequency_table <- table(bank_copy$y)
+print(frequency_table)
+```
+
+As per this, y is imbalanced having different number of observations.
+
+4. (3 pts) Explore the data in order to investigate the association between the target variable y and other variables in the dataset. Which of the other variables are associated with y? Use appropriate plots and statistic tests to answer this question.
+
+So, we know that:
+Our target variable - y is categorical and binary
+For our independent variables, we have two types
+For categorical -> we'll use chi-square and mosaic plot
+For numerical -> we'll use t-test and box plots
+
+```{r}
+# Let's do first for categorical:
+# job, marital, education, default, housing, loan, contact, month, poutcome
+chi_sq_job <- chisq.test(bank_copy$job, bank_copy$y)
+print(chi_sq_job)
+
+chi_sq_marital <- chisq.test(bank_copy$marital, bank_copy$y)
+print(chi_sq_marital)
+
+chi_sq_education <- chisq.test(bank_copy$education, bank_copy$y)
+print(chi_sq_education)
+
+chi_sq_default <- chisq.test(bank_copy$default, bank_copy$y)
+print(chi_sq_default)
+
+chi_sq_housing <- chisq.test(bank_copy$housing, bank_copy$y)
+print(chi_sq_housing)
+
+chi_sq_loan <- chisq.test(bank_copy$loan, bank_copy$y)
+print(chi_sq_loan)
+
+chi_sq_contact <- chisq.test(bank_copy$contact, bank_copy$y)
+print(chi_sq_contact)
+
+chi_sq_month <- chisq.test(bank_copy$month, bank_copy$y)
+print(chi_sq_month)
+
+chi_sq_poutcome <- chisq.test(bank_copy$poutcome, bank_copy$y)
+print(chi_sq_poutcome)
+```
+```{r}
+#job, marital, education, default, housing, loan, contact, month, poutcome
+mosaicplot(table(bank_copy$job, bank_copy$y), main = "Job", color = c("lightblue", "pink"))
+mosaicplot(table(bank_copy$marital, bank_copy$y), main = "Marital", color = c("lightblue","pink"))
+mosaicplot(table(bank_copy$education, bank_copy$y), main = "Education", color = c("lightblue", "pink"))
+mosaicplot(table(bank_copy$default, bank_copy$y), main = "Default", color = c("lightblue", "pink"))
+mosaicplot(table(bank_copy$housing, bank_copy$y), main = "Housing", color = c("lightblue", "pink"))
+mosaicplot(table(bank_copy$loan, bank_copy$y), main = "loan", color = c("lightblue", "pink"))
+mosaicplot(table(bank_copy$contact, bank_copy$y), main = "Contact", color = c("lightblue", "pink"))
+mosaicplot(table(bank_copy$month, bank_copy$y), main = "Month", color = c("lightblue", "pink"))
+mosaicplot(table(bank_copy$poutcome, bank_copy$y), main = "Poutcome", color = c("lightblue", "pink"))
+```
+
+So, Assuming p-value = 0.05,
+All the categorical variables above have it's p-value less than the threshold value ie. 0.05. So, we'll reject null hypothesis saying that these variables are associated with the target variable.
+
+```{r}
+# Now Let's do for numerical:
+# age, balance, day, duration, campaign, pdays, previous
+
+kruskal_test_age <- kruskal.test(age ~ y, data = bank_copy)
+print(kruskal_test_age)
+
+t_test_balance <- t.test(balance ~ y, data = bank_copy)
+print(t_test_balance)
+
+t_test_day <- t.test(day ~ y, data = bank_copy)
+print(t_test_day)
+
+t_test_duration <- t.test(duration ~ y, data = bank_copy)
+print(t_test_duration)
+
+t_test_campaign <- t.test(campaign ~ y, data = bank_copy)
+print(t_test_campaign)
+
+t_test_pdays <- t.test(pdays ~ y, data = bank_copy)
+print(t_test_pdays)
+
+t_test_previous <- t.test(previous ~ y, data = bank_copy)
+print(t_test_previous)
+```
+# We'll remove age variable as the p-value is greater than 0.05
+
+```{r}
+bank_copy <- subset(bank_copy, select = -age)
+(bank_copy)
+```
+
+
+
+```{r}
+# age, balance, day, duration, campaign, pdays, previous
+boxplot(bank_copy$balance ~ bank_copy$y, xlab = "y", ylab = "balance")
+boxplot(bank_copy$day ~ bank_copy$y, xlab = "y", ylab = "day")
+boxplot(bank_copy$duration ~ bank_copy$y, xlab = "y", ylab = "duration")
+boxplot(bank_copy$campaign ~ bank_copy$y, xlab = "y", ylab = "campaign")
+boxplot(bank_copy$pdays ~ bank_copy$y, xlab = "y", ylab = "pdays")
+boxplot(bank_copy$previous ~ bank_copy$y, xlab = "y", ylab = "previous")
+```
+
+According to this, all the variables have values less than the threshold value, therefore all are associated.
+
+5. (1pt) Use the command colSums(is.na(<your dataframe>) to get the number of missing values in each column of your dataframe. Which columns have missing values? Note: some variables use “unknown” for missing values. Convert all “unknown” values to NA. You can do so by setting “na.strings” parameter to “unknown” when you read the file using read.csv.
+
+```{r}
+colSums(is.na(bank_copy))
+```
+The columns having missing values are: Job, Education, contact, poutcome.
+
+
+6. (3 pt) There are several ways we can deal with missing values. The easiest approach is to remove all the rows with missing values. However, if a large number of rows have missing values removing them will result in loss of information and may affect the classifier performance. If a large number of rows have missing values, then it is typically better to substitute missing values. This is called data imputation. Several methods for missing data imputation exist. The most naïve method (which we will use here) is to replace the missing values with mean of the column (for a numerical column) or mode/majority value of the column (for a categorical column). We will use a more advanced data imputation method in a later module. For now, replace the missing values in a numerical column with the mean of the column and the missing values in a categorical column with the mode/majority of the column. After imputation, use colSums(is.na(<your dataframe>) to make sure that your dataframe no longer has missing values
+
+So, According to this:
+It's better to remove job and education missing values rows because as compared to the total rows ie. 45211 observations, these entries are very less.
+# We are using complete.cases function to remove the specific columns' rows, then confirming by running the colSums method if the rows are removed.
+
+```{r}
+remove_cols <- c("job", "education")
+bank_copy <- bank_copy[complete.cases(bank_copy[, remove_cols]), ]
+colSums(is.na(bank_copy))
+```
+
+# Now, for the contact and poutcome we'll replace the missing values with the mode of the values as they both are categorical
+```{r}
+# Calculating the mode of the contact column by using table function:
+table(bank_copy$contact)
+```
+
+Here, "cellular" is the mode value, Therefore we'll replace the missing values with Cellular.
+To do this, we need to use the dplyr package
+```{r}
+# install.packages("tidyverse")
+library(tidyverse)
+
+```
+
+
+```{r}
+# Using the mutate() function from the package and replacing it with cellular value, we can see that there are no missing values in contact
+bank_copy <- bank_copy %>%
+  mutate(contact = if_else(is.na(contact), "cellular", contact))
+colSums(is.na(bank_copy))
+```
+```{r}
+table(bank_copy$contact)
+```
+
+# Performing the same with poutcome variable
+```{r}
+table(bank_copy$poutcome)
+```
+# According to this data, failure is our mode value and we'll use this to replace with the missing values
+
+```{r}
+bank_copy <- bank_copy %>%
+  mutate(poutcome = if_else(is.na(poutcome), "failure", poutcome))
+colSums(is.na(bank_copy))
+```
+```{r}
+table(bank_copy$poutcome)
+```
+
+
+7. Set the seed of the random number generator to a fixed integer, say 1, so that I can reproduce your work: > set.seed(1)
+```{r}
+set.seed(1)
+```
+
+
+8. (1pt) Randomize the order of the rows in the dataset
+```{r}
+# To randomize the order of the rows
+bank_copy <- bank_copy[sample(nrow(bank_copy), replace = FALSE),]
+```
+
+9. (2 pt) This dataset has several categorical variables. With the exception of few models ( such as Naiive
+Bayes and tree-based models) most machine learning models require numeric features and cannot work
+directly with categorical data. One way to deal with categorical variables is to assign numeric indices to each
+level. However, this imposes an artificial ordering on an unordered categorical variable. For example, suppose
+that we have a categorical variable primary color with three levels: “red”,”blue”,”green”. If we convert “red”
+to 0 , “blue” to 1 and “green” to 2 then we are telling our model that red < blue< green which is not correct. A
+better way to encode an unordered categorical variable is to do one-hot-encoding. In one hot-encoding we
+create a dummy binary variable for each level of a categorical variable. For example we can represent the
+primary color variable by three binary dummy variables, one for each color (red, blue, and green) . If the color
+is red, then the variable red takes value 1 while blue and green both take the value zero.
+Do one-hot-encoding of all your unordered categorical variables (except the target variable y). You can
+use the function one_hot from mltools package to one-hot encode all categorical variables in a dataset.
+Please refer to https://rdrr.io/cran/mltools/man/one_hot.html . Use option DropUnusedLevels=True to
+avoid creating a binary variable for unused levels of a factor variable.
+Please note that the one_hot function takes a data table not a dataframe. You can convert a dataframe to
+datatable by using as.data.table method
+https://www.rdocumentation.org/packages/data.table/versions/1.12.8/topics/as.data.table. Make sure to use
+library(data.table) before using as.data.table method. You can covert a datatable back to a dataframe by
+using as.data.frame method
+https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/as.data.frame
+
+
+```{r}
+# For this, our unordered categorical variables are: job, marital, default, housing, loan, contact, month, poutcome
+#install.packages('data.table')
+#install.packages('mltools')
+library('mltools')
+library('data.table')
+```
+
+```{r}
+# Converting the variables to factors
+cols_to_convert <- c("job", "marital","education", "default", "housing", "loan", "contact", "month", "poutcome")
+bank_copy <- bank_copy %>% mutate(across(all_of(cols_to_convert), factor))
+```
+
+```{r}
+# Performing hot-encoding
+bank_copy$job <- as.factor(bank_copy$job)
+bank_copy$marital <- as.factor(bank_copy$marital)
+bank_copy$education <- as.factor(bank_copy$education)
+bank_copy$housing <- as.factor(bank_copy$housing)
+bank_copy$default <- as.factor(bank_copy$default)
+bank_copy$loan <- as.factor(bank_copy$loan)
+bank_copy$contact <- as.factor(bank_copy$contact)
+bank_copy$month <- as.factor(bank_copy$month)
+bank_copy$poutcome <- as.factor(bank_copy$poutcome)
+dt = as.data.table(bank_copy)
+encoded_bank <- one_hot(dt, cols = "auto" , sparsifyNAs = FALSE , naCols = FALSE, dropCols = TRUE ,  dropUnusedLevels = TRUE)
+bank_copy <- as.data.frame(encoded_bank)
+
+```
+
+
+
+```{r}
+bank_copy
+```
+
+10. Split the data into training and test sets. Use the first 36168 rows for training and the rest for testing.
+
+```{r}
+# Splitting the data and using the random version of data so that we do not get biased training and testing split:
+train_indices <- 1:36168
+test_indices <- 36169:43193
+
+# Split the data
+training_set <- bank_copy[train_indices, -ncol(bank_copy)]
+testing_set <- bank_copy[test_indices, -ncol(bank_copy)]
+bank_copy$y <- as.factor(bank_copy$y)
+training_set_labels <- bank_copy[train_indices,"y" ]
+testing_set_labels <- bank_copy[test_indices, "y"]
+```
+
+
+11. (3 pts) Use 5-fold cross validation with KNN on the training set to predict the “y” variable and report the
+cross-validation accuracy. (Please use crossValidationError function in slides 51-53 of module 4 lecture notes
+and modify it to compute accuracy instead of error. The accuracy is simply 1- error)
+
+```{r}
+# First of all, we'll use 
+# install.packages("caret")
+library(caret)
+#install.packages("class")
+library(class)
+library(lattice)
+```
+
+
+```{r}
+#folds=createFolds(training_set_labels,k=5)
+#str(folds)
+normalize=function(train,val) {
+  #get the statistics (min and max) from the train data
+  train_col_mins= sapply(train, min)
+  train_col_maxs= sapply(train,max)
+  #define a function to do min-max normalization
+  min_max_normalize=function(x, min, max) {return ((x-min)/(max-min))}
+  # apply min-max_normalize to both train and validation sets using the #
+  train_n=as.data.frame(mapply(min_max_normalize, train, train_col_mins, train_col_maxs ))
+  val_n=as.data.frame(mapply(min_max_normalize, val, train_col_mins,train_col_maxs ))
+  # return the normalized train and validation sets
+  return (list("train_n"=train_n, "val_n"=val_n))
+}
+
+knn_fold=function(features,labels,fold,kneighbors){
+  train=features[-fold,]
+  val=features[fold,]
+  data_n= normalize(train, val)
+  train_n= data_n$train_n
+  val_n= data_n$val_n
+  train_labels=labels[-fold]
+  validation_labels=labels[fold]
+  val_preds=knn(train_n,val_n,train_labels,k=kneighbors)
+  t= table(validation_labels,val_preds)
+  error=(t[1,2]+t[2,1])/sum(t)
+  return(error)
+}
+crossValidationError=function(features,labels,kneighbors){
+  folds=createFolds(labels,k=5)
+  errors=sapply(folds,knn_fold,features=features,
+  labels=labels,kneighbors=kneighbors)
+  return(mean(errors))}
+
+
+errors = crossValidationError(training_set,training_set_labels,kneighbors=5)
+errors
+```
+
+
+```{r}
+accuracy <- 1-errors
+accuracy
+```
+
+
+12. (2 pts) Tune K (the number of nearest neighbors) by trying out different values (starting from k=1 to
+k=sqrt(n) where n is the number of observations in the training set (for example k=1,5,10,20 50,100, sqrt(n) ).
+Draw a plot of cross validation accuracy for different values of K. Which value of K seems to perform the best
+on this data set? (Note: the higher the cross validation accuracy ( or the lower the cross validation error) the
+better is the model. You can find an example in slides 54-55 of module 4 lecture notes) Note: This might take
+several minutes to run on your machine, be patient.
+
+
+```{r}
+# n = 36,168 ; sqrt(36168) is approx 190
+k_values <- c(1, 5, 10, 20, 50, 100, round(sqrt(36168)))
+errors <- sapply(k_values,crossValidationError,features=training_set,labels=training_set_labels)
+errors
+```
+```{r}
+# Plotting
+
+plot(errors ~ k_values, main="Cross validation Error VsK", xlab="k", ylab="CVError")
+lines(errors ~ k_values)
+```
+
+
+
+13. (3 pt) Use “knn” function to train a knn model on the training set using the best value of K you found
+above and get the predicted values for the target variable y in the test set.
+
+```{r}
+test_preds <- knn(training_set,testing_set,training_set_labels,k=20)
+t <- table(test_preds, testing_set_labels)
+t
+bank_predicted_values <- as.factor(test_preds)
+```
+
+
+14. (2pt) Compare the predicted target (y) with the true target (y) in the test set using a cross table.
+
+```{r}
+testing_set_labels <- as.factor(testing_set_labels)
+confusion_matrix <- confusionMatrix(bank_predicted_values, testing_set_labels)
+print(confusion_matrix)
+```
+
+# The accuracy is 88.91%
+
+
+15. (2 pt) Based on the cross table above, what is the False Positive Rate and False negative Rate of the
+knn classifier on the test data? False Positive Rate (FPR) is the percentage of all true negative
+(y=”no”) observations that the model predicted to be positive (y=”yes”). False Negative Rate (FNR)
+is the percentage of all true positive (y=”yes”) observations that the model predicted to be negative
+(y=”no”). FPR and FNR should be values in the range [0-1].
+
+```{r}
+# Putting the values according to the chart above
+FP <- 142  # False Positives
+FN <- 637  # False Negatives
+AN <- 6067  # Actual Negatives
+AP <- 179   # Actual Positives
+
+# Calculating the FPR
+FPR <- FP / AN
+cat("The FPR is:", FPR, "\n")
+
+# Calculating the FNR
+FNR <- FN / AP
+cat("The FNR is:", FNR, "\n")
+
+```
+
+
+
+16. (2 pt) Consider a majority classifier which predicts y=”no” for all observations in the test set. Without writing
+any code, explain what would be the accuracy of this majority classifier? Does KNN do better than this majority
+classifier?
+
+# For this scenario, we will have always have a defined set of outputs irrespective of the inputs. The False Positive Rate(FPR) will be 0, and False Negative rate(FNR) as 1 which is 100% accuracy. Therefore, our KNN model has done better.
+
+17. (2 pt) Explain what is the False Positive Rate and False Negative Rate of the majority classifier on the test set and
+how does it compare to the FPR and FNR of the knn model you computed in question 16.
+
+# The False positive Rate of the majority classifier would be 0 and False negative Rate would be 1
+# The False positive rate for our KNN model is coming out to be 2.3% and False Negative Rate as 35.58%. In any case here defined, KNN model has done better
+
+
+
+
+
+
+
+
+# Problem 2: Applying Naïve Bayes to classify movie genres for horror movies
+# For this problem you are going to horror movies dataset from Kaggle , a collection of horror movies pulled from the Movie Database. The goal is to predict whether a movie blongs to “Thriller” genre given its overview, title and tagline. I have attached the data to this assignment spec and you can directly download it from canvas
+
+1. Read the data and store in in the dataframe. Take a look at the structure of data and its variables. We will be working with only four variables: “title”, “overview”, “tagline”, and “genre_names”.
+
+```{r}
+# Let's read the data from the data set
+movies = read.csv("/Users/nancy/Downloads/horror_movies.csv")
+movies
+```
+
+```{r}
+# Looking at its structure
+str(movies)
+```
+```{r}
+# Selecting only the variables we're working on
+movies <- movies[, c("title", "overview", "tagline", "genre_names")]
+movies$title <- as.factor(movies$title)
+movies$overview <- as.factor(movies$overview)
+movies$tagline <- as.factor(movies$tagline)
+movies$genre_names <- as.factor(movies$genre_names)
+
+```
+
+
+
+2. (1pt ) concatenate the “title”, “overview”, and “tagline” together ( with a space in between) and store it in a new variable “text”. You can use use the paste function in R to accomplish this.
+
+```{r}
+movies$text <- paste(movies$title, movies$overview, movies$tagline, sep = " ")
+movies
+```
+
+
+3. Randomize the order of the rows.
+```{r}
+movies <- movies[sample(nrow(movies)), ]
+print(movies)
+```
+
+
+
+4. (1pt) Create a new factor variable thriller that takes the value TRUE if the genre_names of a movie includes Thriller otherwise it takes the value FALSE. You can use the function grepl to detect whether or not genre_names includes the word “Thriller”.
+```{r}
+# Create the thriller factor variable
+movies$thriller <- grepl("Thriller", movies$genre_names, ignore.case = TRUE)
+
+# Convert the result to a factor
+movies$thriller <- as.factor(movies$thriller)
+
+# Print the updated data frame
+print(movies)
+```
+
+
+5. (2pt) Create a text corpus from “text” variable you created in step 2 above. Then clean the corpus, that is convert all texts to lowercase, stem and remove stop words, punctuations, and additional white spaces.
+```{r}
+# Loading necessary libraries
+#install.packages("SnowballC")
+library(tm)
+library(SnowballC)
+text_corpus <- VCorpus(VectorSource(movies$text))
+print(text_corpus)
+```
+
+
+```{r}
+# Cleaning the corpus
+# Convert to lowercase
+text_corpus_clean <- tm_map(text_corpus, content_transformer(tolower))
+
+# Remove numbers
+text_corpus_clean <- tm_map(text_corpus_clean, removeNumbers)
+# Remove stop words
+text_corpus_clean <- tm_map(text_corpus_clean,removeWords, stopwords())
+# Remove punctuation
+text_corpus_clean <- tm_map(text_corpus_clean, removePunctuation)
+
+# Stemming
+text_corpus_clean <- tm_map(text_corpus_clean, stemDocument)
+
+# Remove extra whitespaces
+text_corpus_clean <- tm_map(text_corpus_clean, stripWhitespace)
+
+# Print the cleaned corpus
+print(text_corpus_clean)
+
+```
+
+6. (2pt)Create separate wordclouds for thriller and none_thriller movies Is there any visible difference between the frequent words in thriller vs non-thriller movies?
+
+```{r}
+# install.packages("wordcloud")
+library(wordcloud)
+```
+```{r}
+wordcloud(text_corpus_clean,min.freq = 50, random.order = FALSE)
+
+thriller_text <- subset(text_corpus_clean, movies$thriller == TRUE)
+non_thriller_text <- subset(text_corpus_clean, movies$thriller == FALSE)
+```
+
+
+
+```{r}
+# Create word clouds
+wordcloud(thriller_text, max.words = 40, scale = c(3, 0.5))
+wordcloud(non_thriller_text, max.words = 40, scale = c(3, 0.5))
+```
+# There is no as such visible differences between these two.
+
+7. (1pt) Create a document-term matrix from the cleaned corpus. Then split the data into train and test sets. Use 80% of samples for training and the rest for testing.
+
+```{r}
+movies_dtm <- DocumentTermMatrix(text_corpus_clean)
+```
+
+```{r}
+# Splitting the data into train and test sets
+n <- nrow(movies_dtm)
+n
+train_indices <- sample(1:n, 0.8 * n)  # 80% for training
+
+# Split the data into training and testing sets
+train_movies_set <- movies_dtm[train_indices, ]
+test_movies_set <- movies_dtm[-train_indices, ]
+```
+
+
+```{r}
+train_movies_set
+```
+```{r}
+test_movies_set
+```
+
+8. (1pt) Remove the words that appear less than 10 times in the training data. Convert frequencies in the document-term matrix to binary yes/no features.
+
+```{r}
+movies_freq_words <- findFreqTerms(movies_dtm, 10)
+movies_dtm_freq_train<- train_movies_set[ , movies_freq_words]
+movies_dtm_freq_test <- test_movies_set[ , movies_freq_words]
+```
+```{r}
+# Converting the frequencies in the dtm to binary yes/no feautures
+convert_counts <- function(x) {x <- ifelse(x > 0, "Yes", "No")}
+movies_train <- apply(movies_dtm_freq_train, MARGIN = 2,convert_counts)
+movies_test <- apply(movies_dtm_freq_test, MARGIN = 2, convert_counts)
+```
+
+```{r}
+nrow(movies_train)
+```
+
+
+9. (2pt)Train a Naïve Bayes classifier on the training data to predict whether a movie has thriller genre or not. Evaluate the performance of your model on the test data. Answer the following questions:
+• What is the overall accuracy of the model? ( the percentage of correct predictions)
+• What is the precision and recall of the model for thriller class ? precision and Recall are two popular
+metrics for measuring the performance of a classifier on each class and they are computed as follows:
+Precision = TP/(TP+FP) recall= TP/(TP+FN)
+Where TP is True Positive, FP is false positive and FN is false negative.
+For example, for the “True” class, TP will be the number of Thriller observations in the test data that naïve bayes
+correctly predicted.
+FP will be the number of none-thriller observations in the test data that naïve bayes predicted to be thriller, and
+FN will be the number of thriller observations in the test data that naïve bayes incorrectly predicted.
+
+```{r}
+#install.packages("e1071")
+library(e1071)
+```
+```{r}
+str(movies$thriller)
+```
+
+
+```{r}
+str(movies_train)
+movies_train <- as.factor(movies_train)
+```
+```{r}
+movies
+
+str(movies)
+```
+
+```{r}
+
+n <- nrow(movies_dtm)
+train_indices <- sample(1:n, 0.8 * n)  # 80% for training
+movies_train_labels <- movies[train_indices, "thriller"]
+movies_test_labels <- movies[-train_indices, "thriller"]
+
+movies_classifier <- naiveBayes(movies_train, movies_train_labels)
+movies_test_pred <- predict(movies_classifier, movies_test)
+
+```
+
+
+```{r}
+#install.packages("gmodels")
+library(gmodels)
+CrossTable(movies_test_pred, movies_test_labels, prop.chisq = FALSE, prop.t = FALSE, dnn = c('predicted', 'actual'))
+```
+# What is the overall accuracy of the model? ( the percentage of correct predictions)
+# • What is the precision and recall of the model for thriller class ? precision and Recall are two popular metrics for measuring the performance of a classifier on each class and they are computed as follows:
+# Precision = TP/(TP+FP) recall= TP/(TP+FN)
+# Where TP is True Positive, FP is false positive and FN is false negative.
+# For example, for the “True” class, TP will be the number of Thriller observations in the test data that naïve bayes correctly predicted. FP will be the number of none-thriller observations in the test data that naïve bayes predicted to be thriller, and FN will be the number of thriller observations in the test data that naïve bayes incorrectly predicted.
+
+
+```{r}
+# Confusion matrix values
+TP <- 197  # True Positive
+FP <- 1354  # False Positive
+FN <- 662  # False Negative
+TN <- 4295  # True Negative
+
+# Overall accuracy
+accuracy <- (TP + TN) / (TP + FP + FN + TN)
+cat("Overall Accuracy of the model:", accuracy, "\n")
+
+# Precision for the thriller class
+precision <- TP / (TP + FP)
+cat("Precision for Thriller Class:", precision, "\n")
+
+# Recall for the thriller class
+recall <- TP / (TP + FN)
+cat("Recall for Thriller Class:", recall, "\n")
+
+```
+
+
+
+Precision answers this question: what percentage of observations that the model classified as thriller are truly thriller? Recall for l
+answers this question: what percentage of truly thriller observations was the naïve bayes model able to predict correctly?
+
+
